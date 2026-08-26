@@ -276,6 +276,7 @@ function App() {
             setMonth={setMonth}
             stats={stats}
             loading={statsLoading}
+            onViewRecords={() => setActiveView("Records")}
           />
         ) : activeView === "Records" ? (
           <RecordsView
@@ -407,7 +408,7 @@ function ImportButton() {
     </label>
   );
 }
-function Overview({ month, setMonth, stats, loading }) {
+function Overview({ month, setMonth, stats, loading, onViewRecords }) {
   const totals = stats?.totals || {};
   const total = Number(totals.total || 0);
   const approved = Number(totals.approved || 0);
@@ -495,7 +496,7 @@ function Overview({ month, setMonth, stats, loading }) {
       </div>
       <section className="panel activity-panel">
         <PanelTitle title="Recent enrollments" meta="Showing latest 6 records">
-          <button className="text-button">
+            <button className="text-button" onClick={onViewRecords}>
             View records <span>→</span>
           </button>
         </PanelTitle>
