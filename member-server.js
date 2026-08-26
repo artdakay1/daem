@@ -16,6 +16,7 @@ db.exec("CREATE TABLE IF NOT EXISTS members (id INTEGER PRIMARY KEY, username TE
 try { db.exec("ALTER TABLE records ADD COLUMN member_id INTEGER"); } catch (error) { if (!error.message.includes("duplicate column name")) throw error; }
 
 const app = express();
+app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json({ limit: "1mb" }));
 app.use(session({ secret: process.env.MEMBER_SESSION_SECRET || process.env.SESSION_SECRET || "local-member-secret-change-me", resave: false, saveUninitialized: false, cookie: { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 8 * 60 * 60 * 1000 } }));
 function requireMember(req, res, next) { if (!req.session.member) return res.status(401).json({ error: "Member login required" }); next(); }
