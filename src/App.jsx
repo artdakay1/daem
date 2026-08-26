@@ -104,6 +104,7 @@ function App() {
   const [stats, setStats] = useState(null);
   const [quality, setQuality] = useState(null);
   const [status, setStatus] = useState("All statuses");
+  const [msr, setMsr] = useState("All MSRs");
   const [recordsMeta, setRecordsMeta] = useState({
     total: 0,
     page: 1,
@@ -128,7 +129,7 @@ function App() {
     setLoading(true);
     setError("");
     fetch(
-      `/api/records?q=${encodeURIComponent(query)}&month=${encodeURIComponent(month)}&status=${encodeURIComponent(status)}`,
+      `/api/records?q=${encodeURIComponent(query)}&month=${encodeURIComponent(month)}&status=${encodeURIComponent(status)}&msr=${encodeURIComponent(msr)}`,
     )
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((data) => {
@@ -141,7 +142,7 @@ function App() {
         setError("Unable to load records right now.");
       })
       .finally(() => setLoading(false));
-  }, [authenticated, month, query, status]);
+  }, [authenticated, month, query, status, msr]);
   useEffect(() => {
     if (!authenticated) return;
     setStatsLoading(true);
@@ -162,12 +163,12 @@ function App() {
       .catch(() => setError("Unable to load data quality checks right now."));
   }, [authenticated, activeView, qualityRefresh]);
   useEffect(() => {
-    if (!authenticated || activeView !== "Member approvals") return;
+    if (!authenticated) return;
     fetch("/api/members")
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then(setMembers)
       .catch(() => setError("Unable to load member approvals right now."));
-  }, [authenticated, activeView]);
+  }, [authenticated]);
   async function login(username, password) {
     const response = await fetch("/api/login", {
       method: "POST",
@@ -286,6 +287,9 @@ function App() {
             setMonth={setMonth}
             status={status}
             setStatus={setStatus}
+            msr={msr}
+            setMsr={setMsr}
+            members={members}
             loading={loading}
             onSelectRecord={setSelectedRecord}
           />
@@ -654,6 +658,9 @@ function RecordsView({
   setMonth,
   status,
   setStatus,
+  msr,
+  setMsr,
+  members,
   loading,
   onSelectRecord,
 }) {
@@ -666,7 +673,7 @@ function RecordsView({
             All records <sup>4,725</sup>
           </h2>
         </div>
-        <a className="export-button" href={`/api/records.csv?q=${encodeURIComponent(query)}&month=${encodeURIComponent(month)}&status=${encodeURIComponent(status)}`}>↓ Export filtered</a>
+        <a className="export-button" href={`/api/records.csv?q=${encodeURIComponent(query)}&month=${encodeURIComponent(month)}&status=${encodeURIComponent(status)}&msr=${encodeURIComponent(msr)}`}>↓ Export filtered</a>
       </div>
       <section className="panel records-panel">
         <div className="filters">
@@ -692,6 +699,10 @@ function RecordsView({
             <option>Correction Required</option>
             <option>Approved</option>
             <option>Rejected</option>
+          </select>
+          <select value={msr} onChange={(event) => setMsr(event.target.value)}>
+            <option>All MSRs</option>
+            {members.filter((member) => member.approval_status === "Approved").map((member) => <option key={member.username} value={member.username}>{member.name}</option>)}
           </select>
         </div>
         <div className="table-wrap">

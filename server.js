@@ -166,6 +166,7 @@ app.get("/api/records", requireAuth, (req, res) => {
     q = "",
     month = "All months",
     status = "All statuses",
+    msr = "All MSRs",
     accountType = "All account types",
     reason = "All reasons",
     year = "All years",
@@ -198,6 +199,10 @@ app.get("/api/records", requireAuth, (req, res) => {
   if (status !== "All statuses") {
     filters.push("status = @status");
     params.status = status;
+  }
+  if (msr !== "All MSRs") {
+    filters.push("members.username = @msr");
+    params.msr = msr;
   }
   if (accountType !== "All account types") {
     filters.push("account_type = @accountType");
@@ -411,7 +416,7 @@ app.get("/api/records.csv", requireAuth, (req, res) => {
   audit(req, "exported records");
   const filters = [];
   const params = { q: `%${req.query.q || ""}%` };
-  filters.push("(name LIKE @q OR sss_no LIKE @q OR account_number LIKE @q)");
+  filters.push("(records.name LIKE @q OR records.sss_no LIKE @q OR records.account_number LIKE @q OR members.name LIKE @q OR members.username LIKE @q)");
   if (req.query.month && req.query.month !== "All months") {
     filters.push("enrollment_month = @month");
     params.month = req.query.month;
@@ -420,9 +425,13 @@ app.get("/api/records.csv", requireAuth, (req, res) => {
     filters.push("status = @status");
     params.status = req.query.status;
   }
+  if (req.query.msr && req.query.msr !== "All MSRs") {
+    filters.push("members.username = @msr");
+    params.msr = req.query.msr;
+  }
   const rows = db
     .prepare(
-      `SELECT * FROM records ${filters.length ? `WHERE ${filters.join(" AND ")}` : ""} ORDER BY item_no DESC`,
+      `SELECT records.*, members.name AS msr_name, members.username AS msr_username FROM records LEFT JOIN members ON members.id = records.member_id ${filters.length ? `WHERE ${filters.join(" AND ")}` : ""} ORDER BY records.item_no DESC`,
     )
     .all(params);
   const fields = Object.keys(rows[0] || { item_no: "" });
