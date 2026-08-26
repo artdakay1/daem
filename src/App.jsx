@@ -499,6 +499,7 @@ function Overview({ month, setMonth, stats, loading }) {
             <thead>
               <tr>
                 <th>Member</th>
+                <th>MSR / Member</th>
                 <th>Account type</th>
                 <th>Enrolled</th>
                 <th>Processing</th>
@@ -512,6 +513,7 @@ function Overview({ month, setMonth, stats, loading }) {
                     <strong>{record.name}</strong>
                     <small>{record.sss_no}</small>
                   </td>
+                  <td>{record.msr_name || "Admin import"}<small>{record.msr_username ? "Member submission" : "Administrator"}</small></td>
                   <td>{record.account_type}</td>
                   <td>{record.date_enrolled}</td>
                   <td>
@@ -696,6 +698,7 @@ function RecordsView({
               <tr>
                 <th>Item No</th>
                 <th>Name</th>
+                <th>MSR / Member</th>
                 <th>SSS No</th>
                 <th>Account Type</th>
                 <th>Account #</th>
@@ -709,11 +712,12 @@ function RecordsView({
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan="12">Loading records...</td></tr>}
+              {loading && <tr><td colSpan="13">Loading records...</td></tr>}
               {!loading && visibleRecords.map((record) => (
                 <tr key={record.item_no} onClick={() => onSelectRecord(record)} className="record-row" tabIndex="0" onKeyDown={(event) => { if (event.key === "Enter") onSelectRecord(record); }}>
                   <td>#{record.item_no}</td>
                   <td>{record.name}</td>
+                  <td>{record.msr_name || "Admin import"}</td>
                   <td>{record.sss_no}</td>
                   <td>{record.account_type}</td>
                   <td>{record.account_number}</td>

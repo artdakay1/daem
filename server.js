@@ -226,21 +226,21 @@ app.get("/api/records", requireAuth, (req, res) => {
     filters.push("enrollment_year = @year");
     params.year = Number(year);
   }
-  filters.push("(name LIKE @q OR sss_no LIKE @q OR account_number LIKE @q)");
+  filters.push("(records.name LIKE @q OR records.sss_no LIKE @q OR records.account_number LIKE @q OR members.name LIKE @q OR members.username LIKE @q)");
   const where = `WHERE ${filters.join(" AND ")}`;
   const rows = db
     .prepare(
-      `SELECT * FROM records ${where} ORDER BY ${order} ${orderDirection} LIMIT @limit OFFSET @offset`,
+      `SELECT records.*, members.name AS msr_name, members.username AS msr_username FROM records LEFT JOIN members ON members.id = records.member_id ${where} ORDER BY records.${order} ${orderDirection} LIMIT @limit OFFSET @offset`,
     )
     .all(params);
   const total = db
-    .prepare(`SELECT COUNT(*) count FROM records ${where}`)
+    .prepare(`SELECT COUNT(*) count FROM records LEFT JOIN members ON members.id = records.member_id ${where}`)
     .get(params).count;
   res.json({ rows, total, page: Number(page), pageSize: Number(pageSize) });
 });
 app.get("/api/records/:itemNo", requireAuth, (req, res) => {
   const record = db
-    .prepare("SELECT * FROM records WHERE item_no = ?")
+    .prepare("SELECT records.*, members.name AS msr_name, members.username AS msr_username FROM records LEFT JOIN members ON members.id = records.member_id WHERE records.item_no = ?")
     .get(Number(req.params.itemNo));
   if (!record) return res.status(404).json({ error: "Record not found" });
   audit(req, "viewed record detail");
@@ -255,7 +255,7 @@ app.patch("/api/records/:itemNo/review", requireAdmin, (req, res) => {
   const processing = Math.round((new Date(reviewed) - new Date(record.date_enrolled)) / 86400000);
   db.prepare("UPDATE records SET status = ?, rejection_reason = ?, date_reviewed = ?, processing_days = ? WHERE item_no = ?").run(status, status === "Approved" ? null : String(req.body.rejectionReason || "Review required"), reviewed, processing, record.item_no);
   audit(req, `reviewed record ${record.item_no} as ${status}`);
-  res.json(db.prepare("SELECT * FROM records WHERE item_no = ?").get(record.item_no));
+  res.json(db.prepare("SELECT records.*, members.name AS msr_name, members.username AS msr_username FROM records LEFT JOIN members ON members.id = records.member_id WHERE records.item_no = ?").get(record.item_no));
 });
 app.post("/api/import", requireAuth, upload.single("workbook"), (req, res) => {
   if (!req.file)
