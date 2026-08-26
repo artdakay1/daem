@@ -39,6 +39,31 @@ On Windows PowerShell, create the file with `Copy-Item .env.example .env`, then 
 
 The member portal is available at `http://localhost:3002`. Members can register, submit disbursement account data, and track their own submissions. Administrators review submissions from the admin API with `PATCH /api/records/:itemNo/review` and a JSON body such as `{ "status": "Approved" }` or `{ "status": "Correction Required", "rejectionReason": "Name mismatch" }`.
 
+## Run on a LAN
+
+The production-style LAN setup serves the built admin website from Express and keeps the member portal on its own service. On the host computer:
+
+```powershell
+Copy-Item .env.example .env
+# Edit .env and set strong SESSION_SECRET and ADMIN_PASSWORD values
+npm.cmd install
+npm.cmd run start:lan
+```
+
+Find the host computer's IPv4 address with `ipconfig`. From another laptop on the same private Wi-Fi or Ethernet network, open:
+
+- Admin website: `http://HOST-IP:3001`
+- Member portal: `http://HOST-IP:3002`
+
+The host computer must remain powered on and both services must keep running. Allow the ports through Windows Defender Firewall on the host computer using an elevated PowerShell window:
+
+```powershell
+New-NetFirewallRule -DisplayName "DAEM Admin LAN" -Direction Inbound -Protocol TCP -LocalPort 3001 -Profile Private -Action Allow
+New-NetFirewallRule -DisplayName "DAEM Member LAN" -Direction Inbound -Protocol TCP -LocalPort 3002 -Profile Private -Action Allow
+```
+
+Use this only on a trusted private LAN. Do not expose these ports directly to the public internet.
+
 ## Current scope
 
 - Dashboard summary cards and enrollment trend visualizations
@@ -66,5 +91,7 @@ The importer also accepts `.xlsm` files, derives processing days/month/year from
 ## Scripts
 
 - `npm run dev` starts the Vite development server.
+- `npm run start:lan` builds the frontend and starts the admin and member servers for LAN access.
+- `npm run start` starts the production admin server after `npm run build`.
 - `npm run build` creates a production build.
 - `npm run lint` runs Oxlint.

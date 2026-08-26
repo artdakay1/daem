@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"node server.js\" \"vite\"",
+    "start": "node server.js",
+    "start:lan": "npm run build && concurrently \"node server.js\" \"node member-server.js\"",
     "server": "node server.js",
     "member:server": "node member-server.js",
     "import": "node import-data.js",

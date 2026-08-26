@@ -31,6 +31,7 @@ if (!db.prepare("SELECT id FROM users WHERE username = ?").get(username))
   );
 
 const app = express();
+const publicDir = path.join(__dirname, "dist");
 app.use(express.json({ limit: "1mb" }));
 app.use(
   session({
@@ -460,7 +461,10 @@ app.get("/api/audit", requireAuth, (req, res) =>
       .all(),
   ),
 );
+app.use(express.static(publicDir));
+app.get(/^(?!\/api(?:\/|$)).*/, (req, res) => res.sendFile(path.join(publicDir, "index.html")));
+const host = process.env.HOST || "0.0.0.0";
 const port = Number(process.env.PORT || 3001);
-app.listen(port, () =>
-  console.log(`DAEM API listening on http://localhost:${port}`),
+app.listen(port, host, () =>
+  console.log(`DAEM admin server listening on http://${host}:${port}`),
 );
