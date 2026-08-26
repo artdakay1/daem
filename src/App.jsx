@@ -116,6 +116,7 @@ function App() {
   const [reviewing, setReviewing] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [members, setMembers] = useState([]);
+  const [qualityRefresh, setQualityRefresh] = useState(0);
   useEffect(() => {
     fetch("/api/session")
       .then((response) => response.json())
@@ -159,7 +160,7 @@ function App() {
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then(setQuality)
       .catch(() => setError("Unable to load data quality checks right now."));
-  }, [authenticated, activeView]);
+  }, [authenticated, activeView, qualityRefresh]);
   useEffect(() => {
     if (!authenticated || activeView !== "Member approvals") return;
     fetch("/api/members")
@@ -289,7 +290,7 @@ function App() {
             onSelectRecord={setSelectedRecord}
           />
         ) : activeView === "Data quality" ? (
-          <DataQualityView quality={quality} />
+          <DataQualityView quality={quality} onSelectRecord={setSelectedRecord} onRefresh={() => { setQuality(null); setQualityRefresh((current) => current + 1); }} />
         ) : (
           <MemberApprovals members={members} onUpdate={(member) => setMembers((current) => current.map((item) => item.id === member.id ? member : item))} />
         )}
@@ -634,14 +635,15 @@ function Reason({ name, value, width, color }) {
     </div>
   );
 }
-function DataQualityView({ quality }) {
+function DataQualityView({ quality, onSelectRecord, onRefresh }) {
   const checks = [
     ["Negative processing days", quality?.negativeProcessing || 0, "Records where review happened before enrollment"],
     ["Missing dates", quality?.missingDates || 0, "Records without enrollment or review dates"],
     ["Duplicate records", quality?.duplicates || 0, "Records marked as duplicates during import"],
     ["Rejected without reason", quality?.rejectedWithoutReason || 0, "Rejected records requiring an explanation"],
   ];
-  return <div className="dashboard"><div className="section-head"><div><span className="section-kicker">Integrity checks</span><h2>Data quality</h2></div><span className="section-kicker">Admin only</span></div><div className="metrics">{checks.map(([label, value, description]) => <article className="metric" key={label}><div className={`metric-icon ${value ? "red" : "green"}`}>{value ? "!" : "✓"}</div><span>{label}</span><strong>{quality ? Number(value).toLocaleString() : "—"}</strong><small className={value ? "red" : "green"}>{quality ? (value ? "Needs review" : "Clear") : "Loading"}</small><p>{description}</p></article>)}</div><section className="panel"><PanelTitle title="Review queue" meta="Import and submission checks" /><p className="quality-note">Use these checks to identify records that need correction before final reporting. New member submissions appear in the Records view with a Submitted status.</p></section></div>;
+  const issueRows = Object.entries(quality?.issues || {}).flatMap(([type, rows]) => rows.map((row) => ({ ...row, type })));
+  return <div className="dashboard"><div className="section-head"><div><span className="section-kicker">Integrity checks</span><h2>Data quality</h2></div><button className="export-button" onClick={onRefresh}>Refresh checks</button></div><div className="metrics">{checks.map(([label, value, description]) => <article className="metric" key={label}><div className={`metric-icon ${value ? "red" : "green"}`}>{value ? "!" : "✓"}</div><span>{label}</span><strong>{quality ? Number(value).toLocaleString() : "—"}</strong><small className={value ? "red" : "green"}>{quality ? (value ? "Needs review" : "Clear") : "Loading"}</small><p>{description}</p></article>)}</div><section className="panel"><PanelTitle title="Review queue" meta={`${issueRows.length} issue${issueRows.length === 1 ? "" : "s"} found`} />{issueRows.length ? <div className="table-wrap"><table><thead><tr><th>Record</th><th>Issue</th><th>Client</th><th>MSR / Member</th><th>Status</th><th>Action</th></tr></thead><tbody>{issueRows.map((row) => <tr key={`${row.type}-${row.item_no}`}><td>#{row.item_no}</td><td>{row.type === "negativeProcessing" ? "Negative processing days" : row.type === "missingDates" ? "Missing dates" : row.type === "duplicates" ? "Duplicate record" : "Rejected without reason"}</td><td>{row.name}</td><td>{row.msr_name || "Admin import"}</td><td><span className={`status ${row.status.toLowerCase().replaceAll(" ", "-")}`}>{row.status}</span></td><td><button onClick={() => onSelectRecord(row)}>Open record</button></td></tr>)}</tbody></table></div> : <div className="empty">All data quality checks are clear.</div>}</section></div>;
 }
 function RecordsView({
   records: visibleRecords,

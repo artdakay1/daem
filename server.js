@@ -151,30 +151,14 @@ app.get("/api/stats", requireAuth, (req, res) => {
 });
 app.get("/api/data-quality", requireAuth, (req, res) => {
   audit(req, "viewed data quality");
-  const negativeProcessing = db
-    .prepare("SELECT COUNT(*) count FROM records WHERE processing_days < 0")
-    .get().count;
-  const missingDates = db
-    .prepare(
-      "SELECT COUNT(*) count FROM records WHERE date_enrolled = '' OR date_reviewed = ''",
-    )
-    .get().count;
-  const duplicates = db
-    .prepare(
-      "SELECT COUNT(*) count FROM records WHERE duplicate_flag IS NOT NULL AND duplicate_flag != ''",
-    )
-    .get().count;
-  const rejectedWithoutReason = db
-    .prepare(
-      "SELECT COUNT(*) count FROM records WHERE status = 'Rejected' AND (rejection_reason IS NULL OR rejection_reason = '')",
-    )
-    .get().count;
-  res.json({
-    negativeProcessing,
-    missingDates,
-    duplicates,
-    rejectedWithoutReason,
-  });
+  const selectIssues = (condition) => db.prepare(`SELECT records.item_no, records.name, records.sss_no, records.account_type, records.account_number, records.status, records.date_enrolled, records.date_reviewed, records.processing_days, records.rejection_reason, members.name AS msr_name, members.username AS msr_username FROM records LEFT JOIN members ON members.id = records.member_id WHERE ${condition} ORDER BY records.item_no DESC LIMIT 100`).all();
+  const issues = {
+    negativeProcessing: selectIssues("records.processing_days < 0"),
+    missingDates: selectIssues("records.date_enrolled = '' OR records.date_reviewed = ''"),
+    duplicates: selectIssues("records.duplicate_flag IS NOT NULL AND records.duplicate_flag != ''"),
+    rejectedWithoutReason: selectIssues("records.status = 'Rejected' AND (records.rejection_reason IS NULL OR records.rejection_reason = '')"),
+  };
+  res.json({ negativeProcessing: issues.negativeProcessing.length, missingDates: issues.missingDates.length, duplicates: issues.duplicates.length, rejectedWithoutReason: issues.rejectedWithoutReason.length, issues });
 });
 app.get("/api/records", requireAuth, (req, res) => {
   audit(req, "viewed records");
