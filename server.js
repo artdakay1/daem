@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS members (id INTEGER PRIMARY KEY, username TEXT UNIQUE
 CREATE TABLE IF NOT EXISTS records (item_no INTEGER PRIMARY KEY, name TEXT NOT NULL, sss_no TEXT NOT NULL, account_type TEXT NOT NULL, account_number TEXT NOT NULL, status TEXT NOT NULL, rejection_reason TEXT, date_enrolled TEXT NOT NULL, date_reviewed TEXT NOT NULL, processing_days INTEGER NOT NULL, enrollment_month TEXT NOT NULL, enrollment_year INTEGER NOT NULL, duplicate_flag TEXT);
 CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, action TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);`);
 try { db.exec("ALTER TABLE records ADD COLUMN member_id INTEGER") } catch (error) { if (!error.message.includes("duplicate column name")) throw error }
+try { db.exec("ALTER TABLE members ADD COLUMN approval_status TEXT NOT NULL DEFAULT 'Pending'") } catch (error) { if (!error.message.includes("duplicate column name")) throw error }
 const username = process.env.ADMIN_USERNAME || "admin";
 const password = process.env.ADMIN_PASSWORD || "change-this-before-use";
 if (!db.prepare("SELECT id FROM users WHERE username = ?").get(username))
@@ -131,6 +132,18 @@ app.get("/api/session", (req, res) =>
     user: req.session.user || null,
   }),
 );
+app.get("/api/members", requireAdmin, (req, res) => {
+  audit(req, "viewed member approvals");
+  res.json(db.prepare("SELECT id, username, name, sss_no, approval_status, created_at FROM members ORDER BY CASE approval_status WHEN 'Pending' THEN 0 ELSE 1 END, created_at DESC").all());
+});
+app.patch("/api/members/:id/approval", requireAdmin, (req, res) => {
+  const approvalStatus = String(req.body.approvalStatus || "");
+  if (!["Approved", "Rejected"].includes(approvalStatus)) return res.status(400).json({ error: "Approval status must be Approved or Rejected" });
+  const result = db.prepare("UPDATE members SET approval_status = ? WHERE id = ?").run(approvalStatus, Number(req.params.id));
+  if (!result.changes) return res.status(404).json({ error: "Member not found" });
+  audit(req, `${approvalStatus.toLowerCase()} member account ${req.params.id}`);
+  res.json(db.prepare("SELECT id, username, name, sss_no, approval_status, created_at FROM members WHERE id = ?").get(Number(req.params.id)));
+});
 app.get("/api/stats", requireAuth, (req, res) => {
   audit(req, "viewed dashboard");
   res.json(getStats(req.query.month));

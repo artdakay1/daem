@@ -115,6 +115,7 @@ function App() {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [reviewing, setReviewing] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [members, setMembers] = useState([]);
   useEffect(() => {
     fetch("/api/session")
       .then((response) => response.json())
@@ -158,6 +159,13 @@ function App() {
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then(setQuality)
       .catch(() => setError("Unable to load data quality checks right now."));
+  }, [authenticated, activeView]);
+  useEffect(() => {
+    if (!authenticated || activeView !== "Member approvals") return;
+    fetch("/api/members")
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then(setMembers)
+      .catch(() => setError("Unable to load member approvals right now."));
   }, [authenticated, activeView]);
   async function login(username, password) {
     const response = await fetch("/api/login", {
@@ -203,14 +211,14 @@ function App() {
         </div>
         <div className="side-label">Workspace</div>
         <nav>
-          {["Overview", "Records", "Data quality"].map((item) => (
+          {["Overview", "Records", "Data quality", "Member approvals"].map((item) => (
             <button
               className={activeView === item ? "nav-item active" : "nav-item"}
               onClick={() => setActiveView(item)}
               key={item}
             >
               <Icon>
-                {item === "Overview" ? "◈" : item === "Records" ? "▤" : "⌁"}
+                {item === "Overview" ? "◈" : item === "Records" ? "▤" : item === "Data quality" ? "⌁" : "✓"}
               </Icon>
               {item}
             </button>
@@ -280,8 +288,10 @@ function App() {
             loading={loading}
             onSelectRecord={setSelectedRecord}
           />
-        ) : (
+        ) : activeView === "Data quality" ? (
           <DataQualityView quality={quality} />
+        ) : (
+          <MemberApprovals members={members} onUpdate={(member) => setMembers((current) => current.map((item) => item.id === member.id ? member : item))} />
         )}
         {selectedRecord && <RecordReview record={selectedRecord} reviewing={reviewing} onClose={() => setSelectedRecord(null)} onReview={reviewRecord} />}
       </main>
@@ -738,6 +748,24 @@ function RecordsView({
         </div>
       </section>
     </div>
+  );
+}
+
+function MemberApprovals({ members, onUpdate }) {
+  const updateApproval = async (member, approvalStatus) => {
+    const response = await fetch(`/api/members/${member.id}/approval`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ approvalStatus }),
+    });
+    if (!response.ok) return;
+    onUpdate(await response.json());
+  };
+  return (
+    <section className="panel">
+      <div className="section-head"><div><span className="section-kicker">Access control</span><h2>Member approvals</h2></div><span className="section-kicker">Administrator only</span></div>
+      <div className="table-wrap"><table><thead><tr><th>Member</th><th>Username</th><th>SSS No.</th><th>Status</th><th>Action</th></tr></thead><tbody>{members.map((member) => <tr key={member.id}><td><strong>{member.name}</strong></td><td>{member.username}</td><td>{member.sss_no}</td><td><span className={`status ${member.approval_status.toLowerCase()}`}>{member.approval_status}</span></td><td>{member.approval_status === "Pending" ? <><button className="review-approve" onClick={() => updateApproval(member, "Approved")}>Approve</button> <button className="review-reject" onClick={() => updateApproval(member, "Rejected")}>Reject</button></> : <button onClick={() => updateApproval(member, member.approval_status === "Approved" ? "Rejected" : "Approved")}>{member.approval_status === "Approved" ? "Revoke access" : "Approve"}</button>}</td></tr>)}</tbody></table>{members.length === 0 && <div className="empty">No member accounts have been created.</div>}</div>
+    </section>
   );
 }
 
