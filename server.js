@@ -167,6 +167,8 @@ app.get("/api/records", requireAuth, (req, res) => {
     month = "All months",
     status = "All statuses",
     msr = "All MSRs",
+    dateEnrolled = "",
+    dateReviewed = "",
     accountType = "All account types",
     reason = "All reasons",
     year = "All years",
@@ -203,6 +205,14 @@ app.get("/api/records", requireAuth, (req, res) => {
   if (msr !== "All MSRs") {
     filters.push("members.username = @msr");
     params.msr = msr;
+  }
+  if (dateEnrolled) {
+    filters.push("records.date_enrolled = @dateEnrolled");
+    params.dateEnrolled = dateEnrolled;
+  }
+  if (dateReviewed) {
+    filters.push("records.date_reviewed = @dateReviewed");
+    params.dateReviewed = dateReviewed;
   }
   if (accountType !== "All account types") {
     filters.push("account_type = @accountType");

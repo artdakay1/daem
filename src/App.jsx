@@ -105,6 +105,8 @@ function App() {
   const [quality, setQuality] = useState(null);
   const [status, setStatus] = useState("All statuses");
   const [msr, setMsr] = useState("All MSRs");
+  const [dateEnrolled, setDateEnrolled] = useState("");
+  const [dateReviewed, setDateReviewed] = useState("");
   const [recordsMeta, setRecordsMeta] = useState({
     total: 0,
     page: 1,
@@ -129,7 +131,7 @@ function App() {
     setLoading(true);
     setError("");
     fetch(
-      `/api/records?q=${encodeURIComponent(query)}&month=${encodeURIComponent(month)}&status=${encodeURIComponent(status)}&msr=${encodeURIComponent(msr)}`,
+      `/api/records?q=${encodeURIComponent(query)}&month=${encodeURIComponent(month)}&status=${encodeURIComponent(status)}&msr=${encodeURIComponent(msr)}&dateEnrolled=${encodeURIComponent(dateEnrolled)}&dateReviewed=${encodeURIComponent(dateReviewed)}`,
     )
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((data) => {
@@ -142,7 +144,7 @@ function App() {
         setError("Unable to load records right now.");
       })
       .finally(() => setLoading(false));
-  }, [authenticated, month, query, status, msr]);
+  }, [authenticated, month, query, status, msr, dateEnrolled, dateReviewed]);
   useEffect(() => {
     if (!authenticated) return;
     setStatsLoading(true);
@@ -291,6 +293,10 @@ function App() {
             msr={msr}
             setMsr={setMsr}
             members={members}
+            dateEnrolled={dateEnrolled}
+            setDateEnrolled={setDateEnrolled}
+            dateReviewed={dateReviewed}
+            setDateReviewed={setDateReviewed}
             loading={loading}
             onSelectRecord={setSelectedRecord}
           />
@@ -664,6 +670,10 @@ function RecordsView({
   msr,
   setMsr,
   members,
+  dateEnrolled,
+  setDateEnrolled,
+  dateReviewed,
+  setDateReviewed,
   loading,
   onSelectRecord,
 }) {
@@ -676,7 +686,7 @@ function RecordsView({
             All records <sup>4,725</sup>
           </h2>
         </div>
-        <a className="export-button" href={`/api/records.csv?q=${encodeURIComponent(query)}&month=${encodeURIComponent(month)}&status=${encodeURIComponent(status)}&msr=${encodeURIComponent(msr)}`}>↓ Export filtered</a>
+        <a className="export-button" href={`/api/records.csv?q=${encodeURIComponent(query)}&month=${encodeURIComponent(month)}&status=${encodeURIComponent(status)}&msr=${encodeURIComponent(msr)}&dateEnrolled=${encodeURIComponent(dateEnrolled)}&dateReviewed=${encodeURIComponent(dateReviewed)}`}>↓ Export filtered</a>
       </div>
       <section className="panel records-panel">
         <div className="filters">
@@ -707,6 +717,8 @@ function RecordsView({
             <option>All MSRs</option>
             {members.filter((member) => member.approval_status === "Approved").map((member) => <option key={member.username} value={member.username}>{member.name}</option>)}
           </select>
+          <label className="date-filter">Enrolled<input type="date" value={dateEnrolled} onChange={(event) => setDateEnrolled(event.target.value)} /></label>
+          <label className="date-filter">Reviewed<input type="date" value={dateReviewed} onChange={(event) => setDateReviewed(event.target.value)} /></label>
         </div>
         <div className="table-wrap">
           <table>
