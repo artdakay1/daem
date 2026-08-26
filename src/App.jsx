@@ -203,7 +203,7 @@ function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark">D</div>
+          <img className="brand-logo" src="/sss-logo.svg" alt="SSS" />
           <div>
             <strong>DAEM</strong>
             <small>Monitoring dashboard</small>
@@ -314,7 +314,7 @@ function Login({ onLogin, error, setError }) {
       <div className="login-art">
         <div className="art-grid"></div>
         <div className="art-copy">
-          <div className="brand-mark large">D</div>
+          <img className="brand-logo large" src="/sss-logo.svg" alt="SSS" />
           <span>DAEM / 01</span>
           <h1>
             Clarity for every
@@ -333,7 +333,7 @@ function Login({ onLogin, error, setError }) {
       <section className="login-panel">
         <div className="login-inner">
           <div className="mobile-brand">
-            <div className="brand-mark">D</div>
+            <img className="brand-logo" src="/sss-logo.svg" alt="SSS" />
             <strong>DAEM</strong>
           </div>
           <div className="eyebrow">Restricted access</div>

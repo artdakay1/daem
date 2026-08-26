@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 160" role="img" aria-labelledby="title desc">
+  <title id="title">SSS logo</title>
+  <desc id="desc">Blue and white angular SSS mark</desc>
+  <rect width="256" height="160" fill="#123da6"/>
+  <path d="M0 111h27L122 0h44L71 111H0zM62 142h38L195 31h61V0h-81L62 142z" fill="#fff"/>
+  <path d="M0 125h33L128 14h128v14H135L40 139H0z" fill="#fff"/>
+  <path d="M0 112h27L122 1h44L71 112H0zM62 143h38L195 32h61V1h-81L62 143z" fill="none" stroke="#123da6" stroke-width="3"/>
+</svg>
