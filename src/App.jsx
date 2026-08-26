@@ -234,7 +234,7 @@ function App() {
               <small>Last synced just now</small>
             </div>
           </div>
-          <button className="user-row" onClick={logout}>
+          <button className="user-row" onClick={logout} aria-label="Log out of administrator account">
             <span className="avatar">J</span>
             <span>
               <b>Jarvis</b>
