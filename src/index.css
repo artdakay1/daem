@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
+:root { font-family: 'DM Sans', 'Trebuchet MS', sans-serif; color: #172536; background: #f4f1eb; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+.brand-mark { background: #e3bd5b !important; }
+.nav-item.active { box-shadow: inset 3px 0 #e3bd5b !important; }
+.secure > span, .login-note span { color: #d2a63d !important; }
+.avatar { background: #dbe7f2 !important; color: #214d7a !important; }
+.login-art { background: #12345b !important; }
+.art-copy h1 em { color: #e3bd5b !important; }
+.login-button { background: #d2a63d !important; color: #12345b !important; }
+.login-options a, .text-button { color: #b1841b !important; }
+.status.approved, .status.rejected { color: #896818 !important; background: #f8efd5 !important; }
+.import-button { position: relative; display: flex; align-items: center; gap: 8px; padding: 10px 13px; border: 1px solid #d2a63d; border-radius: 5px; color: #9a7415; background: #fffaf0; font-size: 12px; cursor: pointer; }
+.import-button input { display: none; }
+.import-message { position: absolute; top: calc(100% + 8px); right: 0; width: max-content; max-width: 260px; padding: 8px 10px; border: 1px solid #dbe4ee; border-radius: 4px; color: #214d7a; background: #fff; font-size: 10px; z-index: 2; }

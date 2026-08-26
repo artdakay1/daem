@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DAEM Member Portal</title>
+  <style>
+    :root { color: #172d3d; background: #e8edf0; font-family: Georgia, serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 40px 20px; }
+    main { max-width: 1040px; margin: auto; background: #fff; padding: 34px; border: 1px solid #cbd5dc; box-shadow: 0 12px 35px #172d3d12; }
+    p, label, button, input, select { font-family: Arial, sans-serif; }
+    .eyebrow { color: #e06d53; font-size: 12px; letter-spacing: .12em; font-weight: 700; }
+    h1 { font-size: clamp(34px, 7vw, 58px); line-height: 1; margin: 12px 0; }
+    h2 { margin-top: 34px; border-bottom: 2px solid #172d3d; padding-bottom: 9px; }
+    label { display: block; margin: 16px 0; font-size: 14px; font-weight: 700; }
+    input, select, button { width: 100%; padding: 12px; margin-top: 7px; border: 1px solid #c8c2b5; font-size: 16px; }
+    button { background: #e06d53; color: white; border: 0; cursor: pointer; font-weight: 700; }
+    .tabs { display: flex; gap: 8px; margin: 28px 0 10px; }
+    .tabs button { background: #d8d2c4; color: #172d3d; }
+    .tabs button.active { background: #172d3d; color: white; }
+    .hidden { display: none; }
+    .logbook { border: 1px solid #cbd5dc; font-family: Arial, sans-serif; overflow-x: auto; }
+    .log-header, .record { display: grid; grid-template-columns: 70px minmax(180px, 1.4fr) minmax(120px, 1fr) minmax(180px, 1.4fr) minmax(130px, 1fr) 125px; min-width: 850px; align-items: center; }
+    .log-header { background: #172d3d; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .log-header span, .record > div { padding: 12px 10px; }
+    .record { border-top: 1px solid #dbe2e7; line-height: 1.45; font-size: 13px; }
+    .record:hover { background: #f5f8fa; }
+    .record strong { display: block; font-size: 14px; }
+    .record small { display: block; color: #687b89; margin-top: 3px; }
+    .status { display: inline-block; padding: 5px 8px; border-radius: 12px; font-weight: 700; font-size: 11px; }
+    .submitted { color: #286083; background: #e5eff6; }
+    .approved { color: #247b4f; background: #e3f3e9; }
+    .rejected { color: #b63e32; background: #fae5e0; }
+    .correction, .correction-required { color: #8f6910; background: #fbf0d1; }
+    .log-empty { padding: 26px; text-align: center; color: #687b89; font-family: Arial, sans-serif; }
+    .message { min-height: 22px; margin-top: 16px; font-family: Arial, sans-serif; font-size: 14px; }
+    .signout { background: #172d3d; max-width: 120px; float: right; }
+    .log-meta { display: flex; justify-content: space-between; gap: 15px; align-items: center; font: 13px Arial; color: #687b89; }
+    @media (max-width: 640px) { body { padding: 15px 8px; } main { padding: 22px 15px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">DAEM / MEMBER PORTAL</p>
+    <h1>Client disbursement logbook.</h1>
+    <p>Record each client submission and send it to the administrator for review.</p>
+    <section id="portal">
+      <div class="log-meta"><h2>New logbook entry</h2><span>Open member submission desk</span></div>
+      <form id="submissionForm">
+        <label>Client name<input id="clientName" required /></label>
+        <label>Client SSS number<input id="clientSss" required /></label>
+        <label>Account type<select id="accountType" required><option value="">Choose one</option><option>Bank Account (Disbursement)</option><option>E-Wallet (GCash/Maya)</option><option>PESONet Enrolled Account</option><option>UMID-ATM Card</option></select></label>
+        <label>Account number<input id="accountNumber" required /></label>
+        <button>Add to logbook and submit</button>
+      </form>
+      <div class="log-meta"><h2>Submission logbook</h2><span>Sent to administrator</span></div><div id="records" class="logbook"></div>
+    </section>
+    <div id="message" class="message" role="status"></div>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const showMessage = (text) => { $("message").textContent = text; };
+    async function api(url, options = {}) { const response = await fetch(url, { headers: { "Content-Type": "application/json" }, ...options }); const data = await response.json(); if (!response.ok) throw Error(data.error || "Request failed"); return data; }
+    function render(rows) { $("records").innerHTML = rows.length ? `<div class="log-header"><span>No.</span><span>Client</span><span>SSS No.</span><span>Account Type</span><span>Account No.</span><span>Status</span></div>${rows.map((row) => `<div class="record"><div>#${row.item_no}<small>${row.date_enrolled}</small></div><div><strong>${row.name}</strong></div><div>${row.sss_no}</div><div>${row.account_type}</div><div>${row.account_number}</div><div><span class="status ${row.status.toLowerCase().replaceAll(" ", "-")}">${row.status}</span>${row.rejection_reason ? `<small>${row.rejection_reason}</small>` : ""}</div></div>`).join("")}` : `<div class="log-empty">No client submissions in the logbook yet.</div>`; }
+    async function load() { try { render(await api("/api/member/submissions")); } catch (error) { showMessage(error.message); } }
+    $("submissionForm").onsubmit = async (event) => { event.preventDefault(); try { await api("/api/member/submissions", { method: "POST", body: JSON.stringify({ clientName: $("clientName").value, clientSss: $("clientSss").value, accountType: $("accountType").value, accountNumber: $("accountNumber").value }) }); showMessage("Client added to the logbook and sent for review."); event.target.reset(); await load(); } catch (error) { showMessage(error.message); } };
+    load();
+  </script>
+</body>
+</html>
