@@ -577,6 +577,7 @@ function LineChart({ monthly: points }) {
   const approvedCoordinates = data.map((item, index) => [data.length === 1 ? 300 : (index * 600) / (data.length - 1), 165 - (Number(item.approved || 0) / max) * 135]);
   const path = coordinates.map(([x, y], index) => `${index ? "L" : "M"}${x},${y}`).join(" ");
   const approvedPath = approvedCoordinates.map(([x, y], index) => `${index ? "L" : "M"}${x},${y}`).join(" ");
+  const chartWidth = Math.max(600, data.length * 56);
   return (
     <div className="line-chart">
       <div className="y-axis">
@@ -589,6 +590,7 @@ function LineChart({ monthly: points }) {
       <svg
         viewBox="0 0 600 190"
         preserveAspectRatio="none"
+        style={{ width: `${chartWidth}px` }}
         aria-label="Enrollment trend chart"
       >
         <path
@@ -607,7 +609,7 @@ function LineChart({ monthly: points }) {
           <circle key={`${x}-${y}`} cx={x} cy={y} r="4" />
         ))}
       </svg>
-      <div className="x-axis">
+      <div className="x-axis" style={{ width: `${chartWidth}px` }}>
         {data.map((item) => <span key={item.label}>{item.label}</span>)}
       </div>
     </div>
