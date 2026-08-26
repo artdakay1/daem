@@ -37,6 +37,17 @@
     .message { min-height: 22px; margin-top: 16px; font-family: Arial, sans-serif; font-size: 14px; }
     .signout { background: #172d3d; max-width: 120px; float: right; }
     .log-meta { display: flex; justify-content: space-between; gap: 15px; align-items: center; font: 13px Arial; color: #687b89; }
+    .auth { max-width: 520px; margin: 30px auto 0; }
+    .auth-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+    .auth-tabs button { background: #d8d2c4; color: #172d3d; }
+    .auth-tabs button.active { background: #172d3d; color: #fff; }
+    .profile { background: #f5f8fa; border: 1px solid #cbd5dc; padding: 18px; margin: 25px 0; overflow: auto; }
+    .profile h2 { margin: 0 0 8px; border: 0; padding: 0; }
+    .profile p { margin: 5px 0; }
+    .edit-button { width: auto; padding: 7px 10px; margin: 0; font-size: 12px; }
+    .edit-form { grid-column: 1 / -1; padding: 14px 10px; background: #fff8e5; }
+    .edit-form label { margin: 8px 0; }
+    .edit-form button { width: auto; margin-right: 6px; }
     @media (max-width: 640px) { body { padding: 15px 8px; } main { padding: 22px 15px; } }
   </style>
 </head>
@@ -45,7 +56,23 @@
     <p class="eyebrow">DAEM / MEMBER PORTAL</p>
     <h1>Client disbursement logbook.</h1>
     <p>Record each client submission and send it to the administrator for review.</p>
-    <section id="portal">
+    <section id="auth" class="auth">
+      <div class="auth-tabs"><button id="loginTab" class="active" type="button">Log in</button><button id="registerTab" type="button">Create member account</button></div>
+      <form id="loginForm">
+        <label>Username<input id="loginUsername" required autocomplete="username" /></label>
+        <label>Password<input id="loginPassword" type="password" required autocomplete="current-password" /></label>
+        <button>Log in to member portal</button>
+      </form>
+      <form id="registerForm" class="hidden">
+        <label>Full name<input id="registerName" required /></label>
+        <label>SSS number<input id="registerSss" required /></label>
+        <label>Username<input id="registerUsername" required autocomplete="username" /></label>
+        <label>Password<input id="registerPassword" type="password" minlength="8" required autocomplete="new-password" /></label>
+        <button>Create account and log in</button>
+      </form>
+    </section>
+    <section id="portal" class="hidden">
+      <div class="profile"><button id="logoutButton" class="signout" type="button">Log out</button><h2 id="profileName"></h2><p id="profileStatus">Status: Active</p><p id="profileUsername"></p></div>
       <div class="log-meta"><h2>New logbook entry</h2><span>Open member submission desk</span></div>
       <form id="submissionForm">
         <label>Client name<input id="clientName" required /></label>
@@ -62,10 +89,18 @@
     const $ = (id) => document.getElementById(id);
     const showMessage = (text) => { $("message").textContent = text; };
     async function api(url, options = {}) { const response = await fetch(url, { headers: { "Content-Type": "application/json" }, ...options }); const data = await response.json(); if (!response.ok) throw Error(data.error || "Request failed"); return data; }
-    function render(rows) { $("records").innerHTML = rows.length ? `<div class="log-header"><span>No.</span><span>Client</span><span>SSS No.</span><span>Account Type</span><span>Account No.</span><span>Status</span></div>${rows.map((row) => `<div class="record"><div>#${row.item_no}<small>${row.date_enrolled}</small></div><div><strong>${row.name}</strong></div><div>${row.sss_no}</div><div>${row.account_type}</div><div>${row.account_number}</div><div><span class="status ${row.status.toLowerCase().replaceAll(" ", "-")}">${row.status}</span>${row.rejection_reason ? `<small>${row.rejection_reason}</small>` : ""}</div></div>`).join("")}` : `<div class="log-empty">No client submissions in the logbook yet.</div>`; }
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character]));
+    function formValues(prefix = "") { return { clientName: $(prefix + "clientName").value, clientSss: $(prefix + "clientSss").value, accountType: $(prefix + "accountType").value, accountNumber: $(prefix + "accountNumber").value }; }
+    function render(rows) { $("records").innerHTML = rows.length ? `<div class="log-header"><span>No.</span><span>Client</span><span>SSS No.</span><span>Account Type</span><span>Account No.</span><span>Status</span></div>${rows.map((row) => { const editable = ["Rejected", "Correction Required"].includes(row.status); return `<div class="record"><div>#${row.item_no}<small>${escapeHtml(row.date_enrolled)}</small></div><div><strong>${escapeHtml(row.name)}</strong></div><div>${escapeHtml(row.sss_no)}</div><div>${escapeHtml(row.account_type)}</div><div>${escapeHtml(row.account_number)}</div><div><span class="status ${row.status.toLowerCase().replaceAll(" ", "-")}">${escapeHtml(row.status)}</span>${row.rejection_reason ? `<small>${escapeHtml(row.rejection_reason)}</small>` : ""}${editable ? `<button class="edit-button" data-edit="${row.item_no}" type="button">Edit correction</button>` : ""}</div>${editable ? `<form class="edit-form hidden" data-form="${row.item_no}"><label>Client name<input name="clientName" value="${escapeHtml(row.name)}" required /></label><label>SSS number<input name="clientSss" value="${escapeHtml(row.sss_no)}" required /></label><label>Account type<select name="accountType" required><option>${escapeHtml(row.account_type)}</option><option>Bank Account (Disbursement)</option><option>E-Wallet (GCash/Maya)</option><option>PESONet Enrolled Account</option><option>UMID-ATM Card</option></select></label><label>Account number<input name="accountNumber" value="${escapeHtml(row.account_number)}" required /></label><button>Resubmit correction</button><button type="button" class="cancel-edit">Cancel</button></form>` : ""}</div>`; }).join("")}` : `<div class="log-empty">No client submissions in your logbook yet.</div>`; $("records").querySelectorAll("[data-edit]").forEach((button) => button.onclick = () => $("records").querySelector(`[data-form="${button.dataset.edit}"]`).classList.toggle("hidden")); $("records").querySelectorAll(".cancel-edit").forEach((button) => button.onclick = () => button.closest("form").classList.add("hidden")); $("records").querySelectorAll(".edit-form").forEach((form) => form.onsubmit = async (event) => { event.preventDefault(); const values = Object.fromEntries(new FormData(form)); try { await api(`/api/member/submissions/${form.dataset.form}`, { method: "PATCH", body: JSON.stringify(values) }); showMessage("Correction resubmitted for review."); await load(); } catch (error) { showMessage(error.message); } }); }
     async function load() { try { render(await api("/api/member/submissions")); } catch (error) { showMessage(error.message); } }
-    $("submissionForm").onsubmit = async (event) => { event.preventDefault(); try { await api("/api/member/submissions", { method: "POST", body: JSON.stringify({ clientName: $("clientName").value, clientSss: $("clientSss").value, accountType: $("accountType").value, accountNumber: $("accountNumber").value }) }); showMessage("Client added to the logbook and sent for review."); event.target.reset(); await load(); } catch (error) { showMessage(error.message); } };
-    load();
+    function showPortal(member) { $("auth").classList.add("hidden"); $("portal").classList.remove("hidden"); $("profileName").textContent = member.name; $("profileUsername").textContent = `Username: ${member.username} | SSS: ${member.sssNo}`; load(); }
+    $("loginTab").onclick = () => { $("loginTab").classList.add("active"); $("registerTab").classList.remove("active"); $("loginForm").classList.remove("hidden"); $("registerForm").classList.add("hidden"); };
+    $("registerTab").onclick = () => { $("registerTab").classList.add("active"); $("loginTab").classList.remove("active"); $("registerForm").classList.remove("hidden"); $("loginForm").classList.add("hidden"); };
+    $("loginForm").onsubmit = async (event) => { event.preventDefault(); try { showPortal(await api("/api/member/login", { method: "POST", body: JSON.stringify({ username: $("loginUsername").value, password: $("loginPassword").value }) })); showMessage("You are logged in."); } catch (error) { showMessage(error.message); } };
+    $("registerForm").onsubmit = async (event) => { event.preventDefault(); try { showPortal(await api("/api/member/register", { method: "POST", body: JSON.stringify({ name: $("registerName").value, sssNo: $("registerSss").value, username: $("registerUsername").value, password: $("registerPassword").value }) })); showMessage("Member account created."); } catch (error) { showMessage(error.message); } };
+    $("logoutButton").onclick = async () => { await api("/api/member/logout", { method: "POST" }); location.reload(); };
+    $("submissionForm").onsubmit = async (event) => { event.preventDefault(); try { await api("/api/member/submissions", { method: "POST", body: JSON.stringify(formValues()) }); showMessage("Client added to the logbook and sent for review."); event.target.reset(); await load(); } catch (error) { showMessage(error.message); } };
+    api("/api/member/session").then((session) => { if (session.authenticated) showPortal(session.member); });
   </script>
 </body>
 </html>
